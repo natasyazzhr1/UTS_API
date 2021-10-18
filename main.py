@@ -9,6 +9,8 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
+# app = FastAPI(openapi_url="/api/v1/openapii.json")
+
 with open("menu.json", "r") as read_file:
     data = json.load(read_file)
 app = FastAPI()
@@ -26,6 +28,16 @@ user_db = {
         "disabled": False,
     }
 }
+
+tags_metadata = [
+    {
+        "name": "Auth",
+    },
+    {
+        "name": "Item",
+        "description": "Menu and Item",
+    },
+]
 
 class Token(BaseModel):
     access_token: str
@@ -105,7 +117,7 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 def identitas():
     return{'Natasya Jatiwicha Azzahra (18219065)'}
 
-@app.post("/token", response_model=Token)
+@app.post("/token", tags=['Auth'], response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(user_db, form_data.username, form_data.password)
     if not user:
@@ -120,7 +132,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer"}
     
-@app.get("/users/me/", response_model=User)
+@app.get("/users/me/", tags=['Auth'], response_model=User)
 async def read_current_user(current_user: User = Depends(get_current_active_user)):
     return current_user
 
@@ -130,7 +142,7 @@ async def read_items(current_user: User = Depends(get_current_active_user)):
     return [{"item_id": "Foo", "owner": current_user.username}]
 
 
-@app.get('/menu/{item_id}')
+@app.get('/menu/{item_id}', tags=['Item'])
 async def read_menu(item_id: int, current_user: User = Depends(get_current_active_user)):
     for menu_item in data['menu']:
         if menu_item['id'] == item_id:
@@ -139,11 +151,11 @@ async def read_menu(item_id: int, current_user: User = Depends(get_current_activ
         status_code=404, detail=f'Item not found'
     )
 
-@app.get('/menu')
+@app.get('/menu', tags=['Item'])
 async def read_all_menu(current_user: User = Depends(get_current_active_user)):
         return data
 
-@app.post('/menu')
+@app.post('/menu', tags=['Item'])
 async def add_new_menu(name: str, current_user: User = Depends(get_current_active_user)):
     id=1
     if(len(data["menu"])>0):
@@ -155,7 +167,7 @@ async def add_new_menu(name: str, current_user: User = Depends(get_current_activ
         json.dump(data,write_file,indent=4)
     write_file.close()
 
-@app.put('/menu/{item_id}')
+@app.put('/menu/{item_id}', tags=['Item'])
 async def update_menu(item_id: int, name:str, current_user: User = Depends(get_current_active_user)):
     for menu_item in data['menu']:
         if menu_item['id'] == item_id:
@@ -164,7 +176,7 @@ async def update_menu(item_id: int, name:str, current_user: User = Depends(get_c
                 json.dump(data,write_file, indent=4)
             return{"message": "Data updated successfully"}
  
-@app.delete('/menu/{item_id}')
+@app.delete('/menu/{item_id}', tags=['Item'])
 async def delete_menu(item_id: int, current_user: User = Depends(get_current_active_user)):
     for menu_item in data['menu']:
         if menu_item['id'] == item_id:
