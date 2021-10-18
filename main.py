@@ -101,9 +101,12 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
+@app.get('/')
+def identitas():
+    return{'Natasya Jatiwicha Azzahra (18219065)'}
 
 @app.post("/token", response_model=Token)
-async def login_for_user(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(user_db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -116,10 +119,16 @@ async def login_for_user(form_data: OAuth2PasswordRequestForm = Depends()):
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+    
+@app.get("/users/me/", response_model=User)
+async def read_current_user(current_user: User = Depends(get_current_active_user)):
+    return current_user
 
-@app.get('/')
-def nama_nim():
-    return{'Natasya Jatiwicha Azzahra (18219065)'}
+
+@app.get("/users/me/items/")
+async def read_items(current_user: User = Depends(get_current_active_user)):
+    return [{"item_id": "Foo", "owner": current_user.username}]
+
 
 @app.get('/menu/{item_id}')
 async def read_menu(item_id: int, current_user: User = Depends(get_current_active_user)):
@@ -135,7 +144,7 @@ async def read_all_menu(current_user: User = Depends(get_current_active_user)):
         return data
 
 @app.post('/menu')
-async def add_menu(name: str, current_user: User = Depends(get_current_active_user)):
+async def add_new_menu(name: str, current_user: User = Depends(get_current_active_user)):
     id=1
     if(len(data["menu"])>0):
         id=data["menu"][len(data["menu"])-1]["id"]+1
